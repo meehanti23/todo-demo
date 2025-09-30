@@ -1,5 +1,9 @@
 import streamlit as st
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 def main():
@@ -10,9 +14,6 @@ def main():
     api_token = os.getenv("API_TOKEN", None)
 
     st.write(f"Hello, **{user_name}**! Welcome to your to-do list.")
-
-    if api_token:
-        st.write(f"Your API token is: `{api_token[:4]}****` (kept secret!)")
 
     # Initialize session state for to-dos
     if "todos" not in st.session_state:
