@@ -3,9 +3,9 @@ import os
 
 
 def main():
-    st.title("Your Secret-Powered To-Do List")
+    st.title("Your To-Do List")
 
-    # Get secrets from environment (to demo secrets injection)
+    # Get demo secrets from environment
     user_name = os.getenv("USER_NAME", "Guest User")
     api_token = os.getenv("API_TOKEN", None)
 
@@ -18,12 +18,14 @@ def main():
     if "todos" not in st.session_state:
         st.session_state["todos"] = []
 
-    todo_input = st.text_input("Add a new to-do item:")
+    def add_todo():
+        if st.session_state.todo_input:
+            st.session_state.todos.append(st.session_state.todo_input)
+            st.session_state.todo_input = ""
 
-    if st.button("Add"):
-        if todo_input:
-            st.session_state.todos.append(todo_input)
-            st.experimental_rerun()
+    todo_input = st.text_input(
+        "Enter a to-do item:", key="todo_input", on_change=add_todo
+    )
 
     # Display to-do items with delete buttons
     for idx, todo in enumerate(st.session_state.todos):
@@ -31,7 +33,7 @@ def main():
         col1.write(todo)
         if col2.button("❌", key=idx):
             st.session_state.todos.pop(idx)
-            st.experimental_rerun()
+            st.rerun()
 
 
 if __name__ == "__main__":
