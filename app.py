@@ -1,9 +1,33 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
+from peewee import *
+from playhouse.db_url import connect
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Database configuration
+# If DATABASE_URL exists, use it (PostgreSQL in production)
+# Otherwise, default to SQLite for local development
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///todos.db")
+
+# Connect to database using the URL
+db = connect(DATABASE_URL)
+
+
+# Define the Todo model
+class Todo(Model):
+    task = CharField()
+    completed = BooleanField(default=False)
+
+    class Meta:
+        database = db
+
+
+# Create tables if they don't exist
+db.connect()
+db.create_tables([Todo], safe=True)
 
 
 def main():
@@ -15,25 +39,41 @@ def main():
 
     st.write(f"Hello, **{user_name}**! Welcome to your to-do list.")
 
-    # Initialize session state for to-dos
-    if "todos" not in st.session_state:
-        st.session_state["todos"] = []
+    # Show which database is being used (helpful for workshop demo)
+    db_type = "PostgreSQL" if "postgres" in DATABASE_URL else "SQLite"
+    st.caption(f"Using {db_type} database")
 
-    def add_todo():
-        if st.session_state.todo_input:
-            st.session_state.todos.append(st.session_state.todo_input)
-            st.session_state.todo_input = ""
+    # Add new todo
+    todo_input = st.text_input("Enter a to-do item:")
+    if st.button("Add") and todo_input:
+        Todo.create(task=todo_input)
+        st.rerun()
 
-    todo_input = st.text_input(
-        "Enter a to-do item:", key="todo_input", on_change=add_todo
-    )
+    # Display todos
+    todos = Todo.select().order_by(Todo.id.desc())
 
-    # Display to-do items with delete buttons
-    for idx, todo in enumerate(st.session_state.todos):
-        col1, col2 = st.columns([0.9, 0.1])
-        col1.write(todo)
-        if col2.button("❌", key=idx):
-            st.session_state.todos.pop(idx)
+    if todos.count() == 0:
+        st.info("No todos yet. Add one above!")
+
+    for todo in todos:
+        col1, col2, col3 = st.columns([0.1, 0.7, 0.2])
+
+        # Checkbox for completion
+        completed = col1.checkbox("", value=todo.completed, key=f"check_{todo.id}")
+        if completed != todo.completed:
+            todo.completed = completed
+            todo.save()
+            st.rerun()
+
+        # Task text (strikethrough if completed)
+        if todo.completed:
+            col2.write(f"~~{todo.task}~~")
+        else:
+            col2.write(todo.task)
+
+        # Delete button
+        if col3.button("🗑️", key=f"del_{todo.id}"):
+            todo.delete_instance()
             st.rerun()
 
 
