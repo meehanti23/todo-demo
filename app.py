@@ -32,6 +32,7 @@ db.create_tables([Todo], safe=True)
 
 def main():
     st.title("Your To-Do List")
+    # use Attendee Name
 
     # Get demo secrets from environment
     user_name = os.getenv("USER_NAME", "Guest User")
